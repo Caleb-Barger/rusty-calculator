@@ -13,34 +13,37 @@ struct Token<'a> {
 
 fn expression() -> f32 {
     let mut left = term(); // read and evaluate the expression
-    let mut t = get_token(); // get the next token
+    let mut t = ts.get(); // get the next token
 
     loop {
         match t.kind {
             "+" => {
                 left += term();
-                t = get_token();
+                t = ts.get();
                 break;
             },
             "-" => {
                 left -= term();
-                t = get_token();
+                t = ts.get();
                 break;
             },
-            _ => return left,
+            _ => {
+                ts.put_back(t);
+                return left;
+            },
         }
     }
 }
 
 fn term() -> f32 {
     let mut left = primary();
-    let mut t = get_token();
+    let mut t = ts.get();
     
     loop {
         match t.kind {
             "*" => {
                 left *= primary();
-                t = get_token();
+                t = ts.get();
                 break;
             },
             "/" => {
@@ -49,20 +52,23 @@ fn term() -> f32 {
                     panic!("divide by zero :(");
                 }
                 left /= d;
-                t = get_token();
+                t = ts.get();
                 break;
             },
-            _ => return left,
+            _ => {
+                ts.put_back(t);
+                return left;
+            }
         }
     }
 }
 
 fn primary() -> f32 {
-    let mut t = get_token();
+    let mut t = ts.get();
     match t.kind {
         "(" => {
             let d = expression();
-            t = get_token();
+            t = ts.get();
             if t.kind != ")" {
                 panic!("expected )");
             }
@@ -85,38 +91,8 @@ fn main() -> io::Result<()> {
     let mut tokens: Vec<Token> = Vec::new();
 
     for val in &v {
-        match val.parse::<i32>() {
-            Ok(n) => {
-                tokens.push(Token { kind: "8", val: Some(n) });
-            },
-            Err(_e) => {
-                tokens.push(Token { kind: val, val: None });
-            },
-        }
+        println!("{}", expression());
     }
     
-    let mut total = 0;
-    let mut should_add = false;
-
-    for t in &tokens {
-        match t.val {
-            Some(v) => println!("value of token - {}", v),
-            None => println!("No value for token"),
-        }
-
-        match t.kind {
-            "+" => should_add = true, 
-            _ => (), 
-        }
-        println!("Token kind - {}", t.kind);
-    }
-
-    if should_add {
-        total = &tokens[0].val.unwrap() + &tokens[2].val.unwrap(); 
-    }
-
-    println!("{}", total);
-
-
     Ok(())
 }
