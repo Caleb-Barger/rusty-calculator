@@ -5,20 +5,15 @@ struct Token<'a> {
     pub val: Option<i32>,
 }
 
-// functions to match a calculator grammer
-// get_token
-// expression
-// term
-// primary
-
-// Expression:
+// functions to match the calculator grammer
+    // get_token
+    // expression
     // term
-    // expression "+" term
-    // expression "-" term
+    // primary
 
 fn expression() -> f32 {
-    let mut left: f32 = term(); // read and evaluate the expression
-    let mut t: Token = get_token(); // get the next token
+    let mut left = term(); // read and evaluate the expression
+    let mut t = get_token(); // get the next token
 
     loop {
         match t.kind {
@@ -35,6 +30,35 @@ fn expression() -> f32 {
             _ => return left,
         }
     }
+}
+
+fn term() -> f32 {
+    let mut left = primary();
+    let mut t = get_token();
+    
+    loop {
+        match t.kind {
+            "*" => {
+                left *= primary();
+                t = get_token();
+                break;
+            },
+            "/" => {
+                let d = primary();
+                if d == 0 {
+                    panic!("divide by zero :(");
+                }
+                left /= d;
+                t = get_token();
+                break;
+            },
+            _ => return left,
+        }
+    }
+}
+
+fn primary() -> f32 {
+    let mut t = get_token();
 }
 
 fn main() -> io::Result<()> {
