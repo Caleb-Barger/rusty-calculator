@@ -59,7 +59,22 @@ fn term() -> f32 {
 
 fn primary() -> f32 {
     let mut t = get_token();
+    match t.kind {
+        "(" => {
+            let d = expression();
+            t = get_token();
+            if t.kind != ")" {
+                panic!("expected )");
+            }
+            return d;
+        },
+        "8" => {
+            return t.val;
+        },
+        _ => panic!("Expected Primary"),
+    }
 }
+
 
 fn main() -> io::Result<()> {
 
