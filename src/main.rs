@@ -89,9 +89,23 @@ fn main() -> io::Result<()> {
 
     let v: Vec<&str> = input.trim().split(' ').collect();
     let mut tokens: Vec<Token> = Vec::new();
+   
+    let mut val: f32 = 0;
+    for _some_input in &v {
+        let t = ts.get();
 
-    for val in &v {
-        println!("{}", expression());
+        if t.kind == "q" {
+            return Ok(());
+        }
+
+        if t.kind == ";" {
+            println!("={}\n", val);
+        }
+
+        else {
+            ts.put_back(t);
+        }
+        val = expression();
     }
     
     Ok(())
