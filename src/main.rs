@@ -1,5 +1,31 @@
 use std::io;
 
+struct TokenStream {
+    buffer: Option<Token>,
+    full : bool,
+}
+
+impl TokenStream {
+    pub fn new() -> Self {
+        TokenStream { buffer: None, full: false }
+    }
+
+    pub fn put_back(&mut self, t: Token) {
+        if self.full {
+            panic!("put_back call into a full buffer");
+        }
+        self.buffer = Some(t);
+        self.full = true;
+    }
+
+    pub fn get(&mut self) -> Token {
+        if full {
+            self.full = false;
+            self.buffer
+        }
+    }
+}
+
 struct Token<'a> {
     pub kind: &'a str,
     pub val: Option<i32>,
@@ -83,19 +109,39 @@ fn primary() -> f32 {
 
 
 fn main() -> io::Result<()> {
-
-    let mut input = String::new();
-    io::stdin().read_line(&mut input)?;
-
-    let v: Vec<&str> = input.trim().split(' ').collect();
     let mut tokens: Vec<Token> = Vec::new();
-   
-    let mut val: f32 = 0;
-    for _some_input in &v {
+
+    loop {
+        let mut stream: Vec<&str> = Vec::new();
+        let mut buffer = String::new();
+        io::stdin().read_line(&mut buffer)?;
+        match buffer.trim() {
+            "" => {break;},
+            _ => {
+                for s in buffer.trim().split(" ") {
+                    stream.push(s);
+                }
+            },
+        }
+
+        for token in &stream {
+            match token.parse::<f32>() {
+                Ok(n) => tokens.push(Token { kind: Kind::Number, val: Some(n) }),
+                Err(_e) => tokens.push(Token { 
+                    kind: Kind::Operator(String::from(*token)), 
+                    val: None 
+                }),
+            }
+        }
+    }
+
+    let mut ts = TokenStream::new(tokens);
+    let mut val = 0;
+    loop {
         let t = ts.get();
 
         if t.kind == "q" {
-            return Ok(());
+            break;
         }
 
         if t.kind == ";" {
@@ -105,8 +151,10 @@ fn main() -> io::Result<()> {
         else {
             ts.put_back(t);
         }
+
         val = expression();
     }
     
     Ok(())
 }
+
