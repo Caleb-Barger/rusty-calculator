@@ -1,57 +1,60 @@
 use std::io;
 
+#[derive(Debug)]
+enum Kind {
+   Number,
+   Operator(String),
+}
+
+#[derive(Debug)]
+struct Token {
+    kind: Kind,
+    val: Option<f32>,
+}
+
 struct TokenStream {
-    buffer: Option<Token>,
-    full : bool,
+    tokens: Vec<Token>,
 }
 
 impl TokenStream {
-    pub fn new() -> Self {
-        TokenStream { buffer: None, full: false }
-    }
-
-    pub fn put_back(&mut self, t: Token) {
-        if self.full {
-            panic!("put_back call into a full buffer");
-        }
-        self.buffer = Some(t);
-        self.full = true;
+    pub fn new(tokens: Vec<Token>) -> Self {
+        TokenStream { tokens }
     }
 
     pub fn get(&mut self) -> Token {
-        if full {
-            self.full = false;
-            self.buffer
-        }
+       self.tokens.remove(0) 
+    }
+
+    pub fn status(&self) {
+        println!("{:?}", self.tokens);
+    }
+
+    pub fn put_back(&mut self, t: Token) {
+        self.tokens.insert(0, t);
     }
 }
 
-struct Token<'a> {
-    pub kind: &'a str,
-    pub val: Option<i32>,
-}
 
-// functions to match the calculator grammer
-    // get_token
-    // expression
-    // term
-    // primary
-
-fn expression() -> f32 {
-    let mut left = term(); // read and evaluate the expression
+fn expression(ts: &mut TokenStream) -> f32 {
+    let mut left = term(ts); // read and evaluate the expression
     let mut t = ts.get(); // get the next token
 
     loop {
         match t.kind {
-            "+" => {
-                left += term();
-                t = ts.get();
-                break;
-            },
-            "-" => {
-                left -= term();
-                t = ts.get();
-                break;
+            Kind::Operator(o) => {
+                match o.as_str() {
+                    "+" => {
+                        left += term(ts);
+                        t = ts.get();
+                        break;
+                    },
+                    "-" => {
+                        left -= term(ts);
+                        t = ts.get();
+                        break;
+                    },
+                    _ => panic!("Unknown Operator!"),
+                }
             },
             _ => {
                 ts.put_back(t);
@@ -59,27 +62,34 @@ fn expression() -> f32 {
             },
         }
     }
+
+   left 
 }
 
-fn term() -> f32 {
-    let mut left = primary();
+fn term(ts: &mut TokenStream) -> f32 {
+    let mut left = primary(ts);
     let mut t = ts.get();
     
     loop {
         match t.kind {
-            "*" => {
-                left *= primary();
-                t = ts.get();
-                break;
-            },
-            "/" => {
-                let d = primary();
-                if d == 0 {
-                    panic!("divide by zero :(");
+            Kind::Operator(o) => {
+                match o.as_str() {
+                    "*" => {
+                        left *= primary(ts);
+                        t = ts.get();
+//                        break;
+                    },
+                    "/" => {
+                        let d = primary(ts);
+                        if d == 0.0 {
+                            panic!("divide by zero :(");
+                        }
+                        left /= d;
+                        t = ts.get();
+ //                       break;
+                    },
+                    _ => panic!("Unknown Operator"),
                 }
-                left /= d;
-                t = ts.get();
-                break;
             },
             _ => {
                 ts.put_back(t);
@@ -89,24 +99,31 @@ fn term() -> f32 {
     }
 }
 
-fn primary() -> f32 {
+fn primary(ts: &mut TokenStream) -> f32 {
     let mut t = ts.get();
     match t.kind {
-        "(" => {
-            let d = expression();
-            t = ts.get();
-            if t.kind != ")" {
-                panic!("expected )");
+        Kind::Operator(o) => {
+            match o.as_str() {
+                "(" => {
+                    let d = expression(ts);
+                    t = ts.get();
+                    match t.kind {
+                        Kind::Operator(o) => {
+                            match o.as_str() {
+                                ")" => return d,
+                                _ => panic!("expected )"),
+                            }
+                        },
+                        _ => (),
+                    }
+                },
+                _ => 0.0,
             }
-            return d;
         },
-        "8" => {
-            return t.val;
-        },
+        Kind::Number => return t.val.unwrap(),
         _ => panic!("Expected Primary"),
     }
 }
-
 
 fn main() -> io::Result<()> {
     let mut tokens: Vec<Token> = Vec::new();
@@ -136,25 +153,23 @@ fn main() -> io::Result<()> {
     }
 
     let mut ts = TokenStream::new(tokens);
-    let mut val = 0;
+    let mut val = 0.0;
     loop {
         let t = ts.get();
 
-        if t.kind == "q" {
-            break;
+        match t.kind {
+            Kind::Operator(ref o) => {
+                match o.as_str() {
+                   "q" => break,
+                   ";" => println!("={}\n", val),
+                   _ => ts.put_back(t),
+                }
+            },
+            _ => (),
         }
 
-        if t.kind == ";" {
-            println!("={}\n", val);
-        }
-
-        else {
-            ts.put_back(t);
-        }
-
-        val = expression();
+        val = expression(&mut ts);
     }
     
     Ok(())
 }
-
